@@ -476,7 +476,7 @@ function drawTrend(){
   const pw=W-L-R, ph=H-T-B;
   const X=t=>L+Math.max(0,(t-(now-win)))/win*pw, Y=v=>T+ph-(v/100)*ph;
   let g='';
-  for(const v of [0,50,100]) g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1e2d4d"/><text x="${L-5}" y="${Y(v)+3}" text-anchor="end" fill="#7a8cab" font-size="8">${({0:"EMPTY",50:"LOW",100:"HIGH"})[v]}</text>`;
+  for(const v of [0,25,100]) g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1e2d4d"/><text x="${L-5}" y="${Y(v)+3}" text-anchor="end" fill="#7a8cab" font-size="8">${({0:"EMPTY",25:"LOW",100:"HIGH"})[v]}</text>`;
   for(let m=0;m<=60;m+=15){ const t=now-m*60000; g+=`<text x="${X(t)}" y="${H-4}" text-anchor="middle" fill="#7a8cab" font-size="9">${m===0?"now":"-"+m+"m"}</text>`; }
   const line=(key,color)=>{
     const pts=history.filter(p=>p.t>=now-win-60000 && p[key]!==null);
@@ -489,7 +489,8 @@ function drawTrend(){
   $("trend").innerHTML = g + line("a","#38bdf8") + line("b","#a78bfa");
 }
 function pushHistory(){
-  const a=parseInt(S["tank1/level"]), b=parseInt(S["tank2/level"]);
+  const lv=v=>{v=parseInt(v); return v===50?25:v;};
+  const a=lv(S["tank1/level"]), b=lv(S["tank2/level"]);
   if(isNaN(a)&&isNaN(b)) return;
   history.push({t:Date.now(), a:isNaN(a)?null:a, b:isNaN(b)?null:b});
   const cut=Date.now()-3700*1000; while(history.length && history[0].t<cut) history.shift();
