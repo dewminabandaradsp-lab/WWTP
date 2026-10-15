@@ -105,6 +105,19 @@ button:hover{filter:brightness(1.2)}
 .st{font:600 11px "Segoe UI",Arial;letter-spacing:.08em;fill:var(--muted)}
 .st.on{fill:var(--green)}
 .nm{font:600 13px "Segoe UI",Arial;letter-spacing:.14em;fill:#9fb2d3}
+
+/* ---------- connection popup ---------- */
+#connModal{display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;padding:18px;
+  background:rgba(4,8,18,.72);backdrop-filter:blur(3px)}
+#connModal.show{display:flex}
+#connModal .box{width:min(440px,100%);background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--red);
+  border-radius:14px;padding:20px 22px;box-shadow:0 0 0 1px rgba(239,68,68,.25),0 20px 60px rgba(0,0,0,.6)}
+#connModal h3{margin:0 0 4px;font-size:15px;letter-spacing:.12em;color:#fecaca;display:flex;align-items:center;gap:10px}
+#connModal h3::before{content:"";width:11px;height:11px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red);animation:blink 1s steps(2) infinite}
+#connModal ul{margin:12px 0 4px;padding-left:18px;font-size:13.5px;line-height:1.55}
+#connModal ul b{color:var(--text)}
+#connModal .hint{font-size:12px;color:var(--muted);margin-top:8px}
+#connModal .btns{justify-content:flex-end;margin-top:14px}
 </style>
 </head>
 <body>
@@ -123,6 +136,14 @@ button:hover{filter:brightness(1.2)}
     </div>
   </div>
 </header>
+<div id="connModal" role="alertdialog" aria-modal="true" aria-labelledby="connTitle">
+  <div class="box">
+    <h3 id="connTitle">CONNECTION PROBLEM</h3>
+    <ul id="connList"></ul>
+    <div class="hint" id="connHint"></div>
+    <div class="btns"><button id="connOk">Dismiss</button></div>
+  </div>
+</div>
 <div id="banner"></div>
 
 <main>
@@ -332,7 +353,9 @@ buildScene();
 // STATE
 // =====================================================
 const S = {};                        // suffix -> value
-let brokerOk = false, lastMsg = 0, cdAt = 0, mq = null;
+let brokerOk = false, everConnected = false, lastMsg = 0, cdAt = 0, mq = null;
+const pageStart = Date.now();
+let connDismissed = "";
 const history = [];                  // {t, a, b}
 
 const $ = id => document.getElementById(id);
@@ -456,7 +479,32 @@ function render(){
   $("mode").textContent = S["tank2/mode"] || "--";
   const up = parseInt(S["uptime_min"]);
   $("uptime").textContent = isNaN(up) ? "--" : (up>=60 ? Math.floor(up/60)+" h "+(up%60)+" min" : up+" min");
+
+  updateConnModal();
 }
+
+
+// =====================================================
+// CONNECTION POP-UP (MQTT disconnected / system offline)
+// =====================================================
+function updateConnModal(){
+  const stale = lastMsg && (Date.now()-lastMsg)/1000 > CFG.staleSec;
+  const mqttDown = !brokerOk && (everConnected || Date.now()-pageStart > 10000);   // 10 s grace on first load
+  const sysOffline = brokerOk && (S["status"]==="offline" || stale);
+  const items=[];
+  if(mqttDown) items.push("<li><b>MQTT disconnected</b> — the dashboard has lost its connection to the broker. Values shown may be out of date. Reconnecting automatically…</li>");
+  if(sysOffline) items.push(S["status"]==="offline"
+    ? "<li><b>System offline</b> — the controller has reported that it is offline. Check its power and Wi-Fi.</li>"
+    : "<li><b>System not responding</b> — no data received from the controller for over "+CFG.staleSec+" seconds.</li>");
+  const sig = (mqttDown?"M":"")+(sysOffline?(S["status"]==="offline"?"O":"S"):"");
+  const m=$("connModal");
+  if(!sig){ m.classList.remove("show"); connDismissed=""; return; }     // recovered -> close & re-arm
+  $("connList").innerHTML = items.join("");
+  $("connHint").textContent = "This message closes automatically when the connection is restored.";
+  m.classList.toggle("show", sig !== connDismissed);
+  m.dataset.sig = sig;
+}
+$("connOk").onclick = ()=>{ connDismissed = $("connModal").dataset.sig || ""; $("connModal").classList.remove("show"); };
 
 // =====================================================
 // TIMERS (interpolated between messages)
@@ -568,7 +616,7 @@ function start(){
     reconnectPeriod:3000, connectTimeout:8000, keepalive:30, clean:true
   });
   mq = client;
-  client.on("connect", ()=>{ brokerOk=true; client.subscribe(CFG.base+"/#"); logEvent("Connected to broker","val-on"); render(); });
+  client.on("connect", ()=>{ brokerOk=true; everConnected=true; client.subscribe(CFG.base+"/#"); logEvent("Connected to broker","val-on"); render(); });
   const down = ()=>{ if(brokerOk) logEvent("Broker connection lost","val-alarm"); brokerOk=false; render(); };
   client.on("close", down); client.on("offline", down);
   client.on("error", e=>console.warn("MQTT error", e && e.message));
@@ -588,6 +636,7 @@ function start(){
   });
 }
 render(); tickTimers(); drawTrend(); start();
+setTimeout(render, 10500);
 </script>
 </body>
 </html>
