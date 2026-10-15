@@ -325,7 +325,7 @@ function buildScene(){
   <g id="pump2">${pump('p2',830,395,'CLEAR WATER PUMP')}</g>
 
   <!-- drain branch (down from T-joint) -->
-  <g id="vdrn">${valve('drn',JX,492,'DRAIN',JX-28,'end')}</g>
+  <g id="vdrn">${valve('drn',JX,492,'GARDEN VALVE',JX-28,'end')}</g>
 
   <!-- alarm beacon -->
   <g id="alarm">
@@ -363,9 +363,8 @@ const isOn = k => S[k] === "ON";
 
 const DEVICES = [
   ["tank1/pump","EQ Pump"], ["tank2/pump","Clear Water Pump"], ["tank2/sprinkler","Sprinkler"],
-  ["tank2/drain","Drain valve"], ["tank2/lock","Sprinkler lock"], ["fan","Control system cooling fan"],
-  ["alarm","Alarm"], ["relay25/state","Intermediate filter tank"], ["tank1/low","EQ Tank LOW"], ["tank1/high","EQ Tank HIGH"],
-  ["tank2/low","Clear Water Tank LOW"], ["tank2/high","Clear Water Tank HIGH"]
+  ["tank2/drain","Garden Valve"], ["relay25/state","Intermediate Filter Tank"], ["alarm","Alarm"],  ["tank1/low","EQ Tank LOW"], ["tank1/high","EQ Tank HIGH"],
+  ["tank2/low","Clear Water Tank LOW"], ["tank2/high","Clear Water Tank HIGH"], ["tank2/lock","Sprinkler Lock"], ["fan","Control System Cooling Fan"]
 ];
 $("rows").innerHTML = DEVICES.map(([k,n]) =>
   `<div class="row"><span class="l"><span class="dot" id="rd-${k.replace('/','-')}"></span>${n}</span><b id="rv-${k.replace('/','-')}">--</b></div>`).join("");
