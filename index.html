@@ -126,6 +126,7 @@ button:hover{filter:brightness(1.2)}
       <h2>Timers</h2>
       <div class="timers">
         <div class="t"><div class="big" id="cd2">--:--</div><div class="sub" id="cd2l">Tank 2 sequence</div></div>
+        <div class="t"><div class="big" id="cdF">--:--</div><div class="sub" id="cdFl">Cooling fan</div></div>
       </div>
       <div class="sub" style="margin-top:10px">Tank 2 mode: <b id="mode" style="color:var(--text)">--</b></div>
       <div class="sub">System uptime: <b id="uptime" style="color:var(--text)">--</b></div>
@@ -311,7 +312,7 @@ function buildScene(){
   <g id="fan" class="fanon">
     <circle cx="900" cy="250" r="38" fill="#162238" stroke="#64748b" stroke-width="3"/>
     <g class="spinner">${blades}</g>
-    <circle cx="900" cy="250" r="6" fill="#0b1426" stroke="#94a3b8" stroke-width="1"/>
+    <circle cx="900" cy="250" r="6" fill="#0b1426" stroke="#94a3b8" stroke-width="2"/>
     <text class="nm" x="900" y="310" text-anchor="middle">COOLING FAN</text>
     <text class="st" id="st-fan" x="900" y="326" text-anchor="middle">OFF</text>
   </g>`;
