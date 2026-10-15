@@ -347,7 +347,7 @@ function setTank(id, key){
   const low = isOn(key+"/low"), high = isOn(key+"/high");
   const known = S[key+"/level"] !== undefined;
   const ih = 292;
-  const frac = !known ? 0 : high ? 0.90 : low ? 0.58 : 0.12;
+  const frac = !known ? 0 : high ? 0.90 : low ? 0.25 : 0.12;
   $("w-"+id).style.transform = `translateY(${(1-frac)*ih}px)`;
   $("f-"+id+"-l").classList.toggle("lowon", low);
   $("f-"+id+"-h").classList.toggle("highon", high);
