@@ -160,10 +160,10 @@ button:hover{filter:brightness(1.2)}
     <section class="card">
       <h2>Timers</h2>
       <div class="timers">
-        <div class="t"><div class="big" id="cd2">--:--</div><div class="sub" id="cd2l">Tank 2 sequence</div></div>
+        <div class="t"><div class="big" id="cd2">--:--</div><div class="sub" id="cd2l">Clear Water Tank sequence</div></div>
         <div class="t"><div class="big" id="ifState">--</div><div class="sub">INTERMEDIATE FILTER TANK</div></div>
       </div>
-      <div class="sub" style="margin-top:10px">Tank 2 mode: <b id="mode" style="color:var(--text)">--</b></div>
+      <div class="sub" style="margin-top:10px">Clear Water Tank mode: <b id="mode" style="color:var(--text)">--</b></div>
       <div class="sub">System uptime: <b id="uptime" style="color:var(--text)">--</b></div>
     </section>
   </aside>
@@ -192,7 +192,7 @@ button:hover{filter:brightness(1.2)}
 
   <section class="card wide">
     <h2>Level Trend (last 60 min)</h2>
-    <div class="legend"><span style="--c:#38bdf8">Tank 1</span><span style="--c:#a78bfa">Tank 2</span></div>
+    <div class="legend"><span style="--c:#38bdf8">Equalization Tank</span><span style="--c:#a78bfa">Clear Water Tank</span></div>
     <svg id="trend" viewBox="0 0 600 150"></svg>
   </section>
 
@@ -216,7 +216,7 @@ const CFG = {
 // SCENE (SVG)
 // =====================================================
 const LOW_F = 0.20, HIGH_F = 0.9;       // float positions (fraction of tank height)
-const JX = 920, JY = 395;               // T-joint after Pump 2 (up = sprinkler, down = drain)
+const JX = 900, JY = 395;               // T-joint after Pump 2 (up = sprinkler, down = drain)
 const AX = 405;                         // alarm beacon x (between the tanks)
 
 function tank(id, x, y, w, h, name){
@@ -275,6 +275,19 @@ function valve(id, cx, cy, name, lx, anchor){
   </g>`;
 }
 
+
+// horizontal-line valve (bow-tie along the pipe), hand-wheel below, label above
+function valveH(id, cx, cy, name, lx, ly){
+  return `<g id="g-${id}">
+    <polygon class="valve-body" points="${cx-16},${cy-14} ${cx},${cy} ${cx-16},${cy+14}" />
+    <polygon class="valve-body" points="${cx+16},${cy-14} ${cx},${cy} ${cx+16},${cy+14}" />
+    <rect x="${cx-3}" y="${cy+8}" width="6" height="12" fill="#94a3b8"/>
+    <rect x="${cx-12}" y="${cy+18}" width="24" height="6" rx="3" fill="#94a3b8"/>
+    <text class="nm" x="${lx}" y="${ly}" text-anchor="middle" style="font-size:10.5px;letter-spacing:.08em">${name}</text>
+    <text class="st" id="st-${id}" x="${lx}" y="${ly+14}" text-anchor="middle" style="font-size:10px;letter-spacing:.04em">CLOSED</text>
+  </g>`;
+}
+
 function buildScene(){
   let drops='';
   for(let i=0;i<10;i++){
@@ -297,13 +310,13 @@ function buildScene(){
   <rect width="1000" height="540" fill="url(#grid)" rx="10"/>
 
   <!-- pipes: Tank 1 -> Pump 1 -> discharge ; Tank 2 -> Pump 2 -> T-joint (up: sprinkler, down: drain) -->
-  <g id="pp1">${pipe("M250 395 H455")}</g>
+  <g id="pp1">${pipe("M250 395 H330 V250")}</g>
   <g id="pp2">${pipe(`M750 395 H${JX}`)}</g>
   <g id="pps">${pipe(`M${JX} ${JY} V130`)}</g>
-  <g id="ppd">${pipe(`M${JX} ${JY} V528`)}</g>
+  <g id="ppd">${pipe(`M${JX} ${JY} H1000`)}</g>
   <circle cx="${JX}" cy="${JY}" r="13" fill="#334155"/>
   <circle cx="${JX}" cy="${JY}" r="7" fill="#0b1426"/>
-  <text class="st" x="400" y="372">DISCHARGE ▶</text>
+  <text class="st" x="330" y="238" text-anchor="middle">▲ STORAGE TANK</text>
 
   ${tank('t1',60,120,190,300,'EQUALIZATION TANK')}
   ${tank('t2',560,120,190,300,'CLEAR WATER TANK')}
@@ -314,18 +327,18 @@ function buildScene(){
   <g id="vspr">${valve('spr',JX,262,'SPRINKLER',JX-28,'end')}</g>
 
   <!-- sprinkler lock -->
-  <g id="lock" class="lock" transform="translate(768,190)">
+  <g id="lock" class="lock" transform="translate(766,190)">
     <rect x="0" y="12" width="22" height="16" rx="3" fill="#f59e0b"/>
     <path d="M4 12 V8 a7 7 0 0 1 14 0 V12" fill="none" stroke="#f59e0b" stroke-width="3"/>
-    <text class="st" x="30" y="25" style="fill:#f59e0b">SPRINKLER LOCK</text>
+    <text class="st" x="0" y="44" style="fill:#f59e0b">SPRINKLER LOCK</text>
   </g>
 
   <!-- pumps -->
   <g id="pump1">${pump('p1',330,395,'EQ PUMP')}</g>
-  <g id="pump2">${pump('p2',830,395,'CLEAR WATER PUMP')}</g>
+  <g id="pump2">${pump('p2',815,395,'CLEAR WATER PUMP')}</g>
 
   <!-- drain branch (down from T-joint) -->
-  <g id="vdrn">${valve('drn',JX,492,'GARDEN VALVE',JX-28,'end')}</g>
+  <g id="vdrn">${valveH('drn',952,395,'GARDEN VALVE',952,352)}</g>
 
   <!-- alarm beacon -->
   <g id="alarm">
@@ -434,7 +447,7 @@ function render(){
   // banner
   const b=$("banner");
   if(al){
-    const why=[]; if(isOn("tank1/high")) why.push("TANK 1 HIGH LEVEL (check Pump 1)"); if(isOn("tank2/high")) why.push("TANK 2 HIGH LEVEL");
+    const why=[]; if(isOn("tank1/high")) why.push("EQUALIZATION TANK HIGH LEVEL (check EQ Pump)"); if(isOn("tank2/high")) why.push("CLEAR WATER TANK HIGH LEVEL");
     b.textContent = "⚠ ALARM ACTIVE" + (why.length ? " — " + why.join(" · ") : "");
     b.style.display="block";
   } else b.style.display="none";
@@ -514,11 +527,11 @@ function tickTimers(){
   const mode = S["tank2/mode"] || "";
   const base = parseInt(S["tank2/countdown"]);
   const el = (Date.now()-cdAt)/1000;
-  let label="Tank 2 sequence", val="--:--";
+  let label="Clear Water Tank sequence", val="--:--";
   if(!isNaN(base)){
-    if(mode==="SPRINKLER RUNNING"){ label="Pump 2 starts in"; val=mmss(base-el); }
-    else if(mode==="PUMP 2 ON CYCLE"){ label="Pump 2 stops in"; val=mmss(base-el); }
-    else if(mode==="PUMP 2 OFF CYCLE"){ label="Pump 2 restarts in"; val=mmss(base-el); }
+    if(mode==="SPRINKLER RUNNING"){ label="Clear Water Pump starts in"; val=mmss(base-el); }
+    else if(mode==="PUMP 2 ON CYCLE"){ label="Clear Water Pump stops in"; val=mmss(base-el); }
+    else if(mode==="PUMP 2 OFF CYCLE"){ label="Clear Water Pump restarts in"; val=mmss(base-el); }
   }
   $("cd2").textContent=val; $("cd2l").textContent=label;
 }
@@ -625,7 +638,7 @@ function start(){
     if(k==="tank2/countdown") cdAt=Date.now();
     if(old!==undefined && old!==v){
       if(NAMES[k]) logEvent(`${NAMES[k]}: ${old} → <b>${v}</b>`, (k==="alarm"&&v==="ON")?"val-alarm":"");
-      else if(k==="tank2/mode") logEvent(`Tank 2 mode: <b>${v}</b>`);
+      else if(k==="tank2/mode") logEvent(`Clear Water Tank mode: <b>${v}</b>`);
       else if(k==="status") logEvent(`Controller ${v}`, v==="online"?"val-on":"val-alarm");
     }
     const sm=/^relay25\/sched\/(\d)$/.exec(k);
