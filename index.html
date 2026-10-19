@@ -77,6 +77,9 @@ button:hover{filter:brightness(1.2)}
 @keyframes wave{to{transform:translateX(-40px)}}
 @keyframes blink{50%{opacity:.35}}
 @keyframes spray{0%{transform:translate(0,0);opacity:0}15%{opacity:.95}35%{transform:translate(calc(var(--dx)*.5),-20px);opacity:.9}100%{transform:translate(var(--dx),62px);opacity:0}}
+#muteBar{display:none;margin:8px 18px 0;padding:8px 14px;border-radius:8px;background:rgba(245,158,11,.12);border:1px solid var(--amber);
+  align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;letter-spacing:.04em}
+#muteBar button{background:#7c4a03;border-color:var(--amber)}
 @keyframes glow{50%{opacity:.25}}
 @keyframes tankalarm{50%{stroke-opacity:.35;filter:drop-shadow(0 0 2px #ef4444)}}
 .wave{animation:wave 2.4s linear infinite}
@@ -145,6 +148,7 @@ button:hover{filter:brightness(1.2)}
   </div>
 </div>
 <div id="banner"></div>
+<div id="muteBar"><span id="muteTxt"></span><button id="muteBtn"></button></div>
 
 <main>
   <section class="card wide">
@@ -366,6 +370,7 @@ buildScene();
 // STATE
 // =====================================================
 const S = {};                        // suffix -> value
+let muteAt = 0;
 let brokerOk = false, everConnected = false, lastMsg = 0, cdAt = 0, mq = null;
 const pageStart = Date.now();
 let connDismissed = "";
@@ -376,7 +381,7 @@ const isOn = k => S[k] === "ON";
 
 const DEVICES = [
   ["tank1/pump","EQ Pump"], ["tank2/pump","Clear Water Pump"], ["tank2/sprinkler","Sprinkler"],
-  ["tank2/drain","Garden Valve"], ["relay25/state","Intermediate Filter Tank"], ["alarm","Alarm"],  ["tank1/low","EQ Tank LOW"], ["tank1/high","EQ Tank HIGH"],
+  ["tank2/drain","Garden Valve"], ["relay25/state","Intermediate Filter Tank"], ["alarm","Alarm"], ["alarm/relay","Siren"],  ["tank1/low","EQ Tank LOW"], ["tank1/high","EQ Tank HIGH"],
   ["tank2/low","Clear Water Tank LOW"], ["tank2/high","Clear Water Tank HIGH"], ["tank2/lock","Sprinkler Lock"], ["fan","Control System Cooling Fan"]
 ];
 $("rows").innerHTML = DEVICES.map(([k,n]) =>
@@ -431,7 +436,7 @@ function render(){
 
   const al = isOn("alarm");
   $("alarm").classList.toggle("on", al);
-  const sa=$("st-alarm"); sa.textContent = al ? "ACTIVE" : "NORMAL"; sa.style.fill = al ? "var(--red)" : "";
+  const sa=$("st-alarm"); sa.textContent = al ? (muteLeft()>0 ? "ACTIVE · MUTED" : "ACTIVE") : "NORMAL"; sa.style.fill = al ? "var(--red)" : "";
 
   // red border on the tank that caused the alarm
   for(const [id,key] of [["t1","tank1"],["t2","tank2"]]){
@@ -451,11 +456,12 @@ function render(){
     b.textContent = "⚠ ALARM ACTIVE" + (why.length ? " — " + why.join(" · ") : "");
     b.style.display="block";
   } else b.style.display="none";
+  updateMute();
 
   // equipment rows
   for(const [k] of DEVICES){
     const id=k.replace('/','-'), on=isOn(k), known=S[k]!==undefined;
-    const isAlarm = k==="alarm" || k.endsWith("/high");
+    const isAlarm = k==="alarm" || k==="alarm/relay" || k.endsWith("/high");
     const d=$("rd-"+id), v=$("rv-"+id);
     d.className = "dot " + (!known ? "" : on ? (isAlarm ? "bad" : "ok") : "");
     v.textContent = known ? S[k] : "--";
@@ -522,7 +528,24 @@ $("connOk").onclick = ()=>{ connDismissed = $("connModal").dataset.sig || ""; $(
 // TIMERS (interpolated between messages)
 // =====================================================
 const mmss = s => { s=Math.max(0,Math.round(s)); return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); };
+function muteLeft(){
+  const m = parseInt(S["alarm/mute"]);
+  return isNaN(m) || m<=0 ? 0 : Math.max(0, m - (Date.now()-muteAt)/1000);
+}
+function updateMute(){
+  const bar=$("muteBar"), al=isOn("alarm"), left=muteLeft();
+  bar.style.display = al ? "flex" : "none";
+  if(!al) return;
+  if(left>0){
+    $("muteTxt").textContent = "🔇 Alarm relay muted — sounds again in " + mmss(left) + " if the fault persists";
+    $("muteBtn").textContent = "Unmute now";
+  } else {
+    $("muteTxt").textContent = "🔔 Alarm relay is sounding";
+    $("muteBtn").textContent = "Mute 10 min";
+  }
+}
 function tickTimers(){
+  updateMute();
   $("clock").textContent = new Date().toLocaleTimeString();
   const mode = S["tank2/mode"] || "";
   const base = parseInt(S["tank2/countdown"]);
@@ -607,6 +630,10 @@ function schedStatus(){
 }
 for(let d=0; d<7; d++) for(const id of ["se-","son-","soff-"]) $(id+d).addEventListener("input",()=>{ touched[d]=true; schedStatus(); });
 
+$("muteBtn").onclick=()=>{
+  if(!mq || !mq.connected){ alert("Not connected to broker."); return; }
+  mq.publish(CFG.base+"/alarm/mute/set", muteLeft()>0 ? "0" : "10", {qos:1, retain:false});
+};
 $("schSave").onclick=()=>{
   if(!mq || !mq.connected){ $("schMsg").textContent="Not connected to broker."; return; }
   for(let d=0; d<7; d++){ mq.publish(CFG.base+"/relay25/sched/set/"+d, fmtS(readRow(d)), {qos:1, retain:false}); touched[d]=false; }
@@ -636,6 +663,8 @@ function start(){
     const k = topic.slice(CFG.base.length+1), v = payload.toString();
     const old = S[k]; S[k]=v; lastMsg=Date.now();
     if(k==="tank2/countdown") cdAt=Date.now();
+    if(k==="alarm/mute"){ muteAt=Date.now(); const o=parseInt(old)||0, n=parseInt(v)||0;
+      if(!o && n) logEvent("Alarm relay muted for 10 min"); else if(o && !n) logEvent("Alarm mute ended"); }
     if(old!==undefined && old!==v){
       if(NAMES[k]) logEvent(`${NAMES[k]}: ${old} → <b>${v}</b>`, (k==="alarm"&&v==="ON")?"val-alarm":"");
       else if(k==="tank2/mode") logEvent(`Clear Water Tank mode: <b>${v}</b>`);
