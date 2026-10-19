@@ -401,10 +401,11 @@ const $ = id => document.getElementById(id);
 const isOn = k => S[k] === "ON";
 // Display text per device (default: raw ON/OFF)
 const LABELS = { "tank2/drain": { ON:"OPEN", OFF:"CLOSE" } };
+const LABELS = { "tank2/sprinkler": { ON:"OPEN", OFF:"CLOSE" } };
 const lbl = (k,v) => (LABELS[k] && LABELS[k][v]) || v;
 
 const DEVICES = [
-  ["tank1/pump","EQ Pump"], ["tank2/pump","Clear Water Pump"], ["tank2/sprinkler","Sprinkler"],
+  ["tank1/pump","EQ Pump"], ["tank2/pump","Clear Water Pump"], ["tank2/sprinkler","Sprinkler Valve"],
   ["tank2/drain","Garden Valve"], ["relay25/state","Intermediate Filter Tank"], ["alarm","Alarm"], ["alarm/relay","Siren"],  ["tank1/low","EQ Tank LOW"], ["tank1/high","EQ Tank HIGH"],
   ["tank2/low","Clear Water Tank LOW"], ["tank2/high","Clear Water Tank HIGH"], ["tank2/lock","Sprinkler Lock"], ["fan","Control System Cooling Fan"]
 ];
