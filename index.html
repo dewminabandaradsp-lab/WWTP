@@ -537,7 +537,7 @@ function updateMute(){
   bar.style.display = al ? "flex" : "none";
   if(!al) return;
   if(left>0){
-    $("muteTxt").textContent = "🔇 Alarm relay muted — sounds again in " + mmss(left) + " if the fault persists";
+    $("muteTxt").textContent = "🔇 SIREN MUTED — sounds again in " + mmss(left) + " if the fault persists";
     $("muteBtn").textContent = "Unmute now";
   } else {
     $("muteTxt").textContent = "🔔 SIREN IS ON";
