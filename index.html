@@ -400,8 +400,10 @@ const $ = id => document.getElementById(id);
   
 const isOn = k => S[k] === "ON";
 // Display text per device (default: raw ON/OFF)
-const LABELS = { "tank2/drain": { ON:"OPEN", OFF:"CLOSE" } };
-const LABELS = { "tank2/sprinkler": { ON:"OPEN", OFF:"CLOSE" } };
+const LABELS = {
+  "tank2/drain":     { ON:"OPEN", OFF:"CLOSE" },
+  "tank2/sprinkler": { ON:"OPEN", OFF:"CLOSE" }
+};
 const lbl = (k,v) => (LABELS[k] && LABELS[k][v]) || v;
 
 const DEVICES = [
