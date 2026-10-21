@@ -592,11 +592,26 @@ setInterval(render, 5000);           // refresh stale detection
 // EVENT LOG
 // =====================================================
 const NAMES = Object.fromEntries(DEVICES);
-function logEvent(text, cls){
-  const li=document.createElement("li");
-  li.innerHTML = `<time>${new Date().toLocaleTimeString()}</time><span class="${cls||""}">${text}</span>`;
-  const ul=$("log"); ul.prepend(li); while(ul.children.length>60) ul.lastChild.remove();
+const SB_URL = "https://zswiucdbosuerimehjkk.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpzd2l1Y2Rib3N1ZXJpbWVoamtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0NTkyNjIsImV4cCI6MjEwODAzNTI2Mn0.Ebxlkf8Qflyd8KtyPrmpWhV4vyxIFXmV1FMVtvAA7D4";
+const LOG_LIMIT = 1000;
+
+function logEvent(){}   // the controller records events now
+
+async function loadLog(){
+  try{
+    const r = await fetch(`${SB_URL}/rest/v1/events?select=ts,text,cls&order=ts.desc&limit=${LOG_LIMIT}`,
+      {headers:{apikey:SB_KEY, Authorization:"Bearer "+SB_KEY}});
+    const rows = await r.json();
+    if(!Array.isArray(rows)) return;
+    $("log").innerHTML = rows.map(e=>{
+      const d=new Date(e.ts);
+      return `<li><time>${d.toLocaleDateString([],{day:"2-digit",month:"short"})} ${d.toLocaleTimeString()}</time><span class="${e.cls||""}">${e.text}</span></li>`;
+    }).join("");
+  }catch(err){ console.warn("log load failed", err); }
 }
+loadLog();
+setInterval(loadLog, 15000);
 
 // =====================================================
 // TREND CHART
